@@ -1,0 +1,22 @@
+指针直面量赋值
+#+BEGIN_SRC c
+int *i = &(int){ 0 };
+#+END_SRC
+
+
+结构体写入文件
+#+BEGIN_SRC c
+fwrite(&dir, sizeof(struct DIR), 1, stream);
+#+END_SRC
+
+字符串分割 
+#+BEGIN_SRC c
+  char input[] = "A bird came down the walk"; /* 不能声明为 *input */
+  printf("Parsing the input string '%s'\n", input);
+  char *token = strtok(input, " ");
+  while(token) {
+      puts(token);
+      token = strtok(NULL, " ");
+  }
+#+END_SRC
+
