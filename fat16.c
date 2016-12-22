@@ -36,6 +36,7 @@ unsigned short FatReadItem(int item)
 
 int FatFree(int item)
 {
+    /* 将 item 表项设置为空 */
     return FatWriteItem(item, FAT_SPACE_UNUSED);
 }
 
@@ -63,6 +64,7 @@ void FatInit()
 
 int FatFindSpace()
 {
+    /* 返回为空的表项 */
     int i;
     for (i = 2; i < FAT_SIZE; i++) {
         if (FatReadItem(i) == FAT_SPACE_UNUSED) {
@@ -73,9 +75,32 @@ int FatFindSpace()
     return -1;
 }
 
+void FatStatus()
+{
+    /* 打印磁盘空间使用信息 */
+
+    /* 文件系统信息 */
+    printf("FAT%2d SYSTEM\n", FAT_TYPE);
+    /* 总空间 */
+    printf("Total disk space: %10d B\n", FAT_SIZE * SECTOR_SIZE);
+
+    int used = 0;
+    int i;
+    for (i = 0; i < FAT_SIZE; i++) {
+        if (FatReadItem(i) != FAT_SPACE_UNUSED) {
+            used++;
+        }
+    }
+
+    /* 已用空间 */
+    printf("Used space      : %10d B\n", used * SECTOR_SIZE);
+    /* 可用空间 */
+    printf("Available space : %10d B\n", (FAT_SIZE - used) * SECTOR_SIZE);
+}
+
 static int BootSectorPos(int item)
 {
-    /* 簇号为 1 时，目录项所在所在扇区 */
+    /* 簇号为 1 时，所在所在扇区 */
     return (item) * DIRENT_SIZE / SECTOR_SIZE + FAT_DIRENT_START;
 }
 
@@ -87,7 +112,7 @@ static int DirentInPos(int item)
 
 static int DateSectorPos(int item)
 {
-    /* 簇号大于 1 时，目录项所在扇区 */
+    /* 簇号大于 1 时，所在扇区 */
     return (item) + FAT_DATA_START - 1;
 }
 
@@ -114,8 +139,21 @@ int DirentRead(int cluster, int item, PDIRENT dir)
     } else {
         sector = DateSectorPos(cluster);
     }
+
     IOReadSector(sector, DirentInPos(item),
                  dir, sizeof(struct _DIRENT), 1);
+
+    /* IOReadSector(sector, DirentInPos(item), */
+    /*              dir->Name, sizeof(char), 8); */
+
+    /* IOReadSector(sector, DirentInPos(item), */
+    /*              dir->Extend, sizeof(char), 3); */
+
+    /* IOReadSector(sector, DirentInPos(item), */
+    /*              dir->Attributes, sizeof(char), 1); */
+
+
+
     /* 目录项不为空，则返回 0，否则返回 1。 */
     if(strcmp(dir->Name, "") == 0) {
         return 1;
@@ -132,7 +170,7 @@ void DirentFree(int cluster, int item)
 int DirentPrint(PDIRENT dir)
 {
     /* 打印时间 */
-    printf("%d/%d/%d  %d:%d\t",
+    printf("%4d/%02d/%02d  %02d:%02d\t",
            dir->LastWriteDate.Year + 1980,
            dir->LastWriteDate.Month + 1,
            dir->LastWriteDate.Day,
@@ -140,13 +178,13 @@ int DirentPrint(PDIRENT dir)
            dir->LastWriteTime.Minute);
 
     /* 判断是否为文件夹 */
-    if (dir->Attributes & DIRENT_ATTR_DIRECTORY) {
+    unsigned char attr = *dir->Attributes;
+    if (attr & DIRENT_ATTR_DIRECTORY) {
         printf("<DIR>       %s\n", dir->Name);
         return 0;
     } else {
-        printf("     %6ld %s.", dir->FileSize, dir->Name);
-        printf("%c%c%c\n", dir->Extend[0], dir->Extend[1],
-               dir->Extend[2]);
+        printf("     %6ld", (unsigned long)dir->FileSize);
+        printf(" %s.%.3s\n", dir->Name, dir->Extend);
         return 1;
     }
 }
@@ -204,7 +242,7 @@ void DirentSet(PDIRENT dir, char *n, unsigned char a,
     strncpy(dir->Name, n, 8);
     dir->LastWriteTime = FatGetCurTime();
     dir->LastWriteDate = FatGetCurDate();
-    dir->Attributes = a;
+    *dir->Attributes = a;
     dir->FirstCluster = c;
     dir->FileSize = s;
 }
@@ -247,3 +285,61 @@ FAT_DATE FatGetCurDate()
     return date;
 }
 
+int isDir(PDIRENT dir)
+{
+    return (*dir->Attributes & DIRENT_ATTR_DIRECTORY) ? 1 : 0;
+}
+
+int isEmptyFile(PDIRENT dir)
+{
+    return (dir->FirstCluster == FAT_SPACE_UNUSED) ? 1 : 0;
+}
+
+int isOutOfSector(int size)
+{
+    return size - SECTOR_SIZE;
+}
+
+int nextNCluster(int first, int n)
+{
+    /* 递归返回下 n 个簇号 */
+    if (n == 0) {
+        return first;
+    } else if (FatReadItem(first) == FAT_SPACE_END) {
+        return first;
+    } else if (FatReadItem(first) == FAT_SPACE_UNUSED) {
+        return -1;
+    } else {
+        return nextNCluster(FatReadItem(first), n - 1);
+    }
+}
+
+int inClusterPos(int pos)
+{
+    return pos % SECTOR_SIZE;
+}
+
+int inClusterIndex(int pos)
+{
+    return pos / SECTOR_SIZE;
+}
+
+int FileWriteLine(int cluster, int pos, char *line, int size)
+{
+    /* 将字符串作为行，写入磁盘 */
+    int sector = DateSectorPos(cluster);
+    return IOWriteSector(sector, pos, line, sizeof(char), size);
+}
+
+int FileReadCluster(int cluster, char *line)
+{
+    int sector = DateSectorPos(cluster);
+    return IOReadSector(sector, 0, line, sizeof(char), SECTOR_SIZE);
+}
+
+int ClusterClean(int cluster)
+{
+    char a = 0x00;
+    int sector = DateSectorPos(cluster);
+    return IOWriteSector(sector, 0, &a, sizeof(char), SECTOR_SIZE);
+}

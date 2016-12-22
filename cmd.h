@@ -1,5 +1,5 @@
-#ifndef _API_H
-#define _API_H
+#ifndef _CMD_H
+#define _CMD_H
 #include "fat16.h"
 
 typedef struct _FCB FCB, *PFCB;
@@ -29,24 +29,26 @@ struct _FCB {
     PFCB ParentDirectory;
 };
 
+/* FCB */
+void FCBCreate(PFCB fcb);
+void FCBFree(PFCB fcb);
 
-void FatStart();                 /* 进入文件系统 */
-void FatExit(int *flag);         /* 退出 */
+/* 状态 */
+void Fat_st(PFCB fcb);          /* 磁盘状态 */
 
 /* 目录操作 */
-void Fat_cd(PFCB *fcb, char *dirName);     /* 更改当前目录 */
+void Fat_cd(PFCB *fcb, char *dirName);   /* 更改当前目录 */
 void Fat_mkdir(PFCB fcb, char *dirName); /* 创建子目录 */
 void Fat_rmdir(PFCB fcb, char *dirName); /* 删除子目录 */
 void Fat_ls(PFCB fcb);                   /* 显示目录 */
 
-
 /* 文件操作 */
-void Fat_create();              /* 创建 */
-void Fat_rm();                  /* 删除 */
-void Fat_open();                /* 打开 */
-void Fat_close();               /* 关闭 */
-void Fat_write();               /* 写 */
-void Fat_read();                /* 读 */
+void Fat_create(PFCB fcb, char *fileName);              /* 创建 */
+void Fat_rm(PFCB fcb, char *fileName);                  /* 删除 */
+void Fat_write(PFCB fcb, char *fileName);               /* 写 */
+void Fat_read(PFCB fcb, char *fileName);                /* 读 */
 
+/* 目录，文件改名 */
+void Fat_rename(PFCB fcb, char *fileName, char *NewName);
 
-#endif  /* _API_H */
+#endif  /* _CMD_H */

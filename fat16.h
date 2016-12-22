@@ -24,12 +24,12 @@ struct _FAT_DATE {
 
 /* 目录项结构体，32字节 */
 struct _DIRENT {
-    char Name[8];              /* 文件名 */
-    char Extend[3];            /* 扩展名 */
-    unsigned char Attributes;   /* 文件属性 */
-    unsigned char Reserved[10]; /* 保留未用 */
-    FAT_TIME LastWriteTime;     /* 最后修改时间 */
-    FAT_DATE LastWriteDate;     /* 最后修改日期 */
+    char Name[8];                /* 文件名 */
+    char Extend[3];              /* 扩展名 */
+    unsigned char Attributes[1];             /* 文件属性 */
+    unsigned char Reserved[10];  /* 保留未用 */
+    FAT_TIME LastWriteTime;      /* 最后修改时间 */
+    FAT_DATE LastWriteDate;      /* 最后修改日期 */
     unsigned short FirstCluster; /* 初始块号 */
     unsigned long FileSize;      /* 文件大小 */
 };
@@ -48,7 +48,7 @@ struct _DIRENT {
 #define FAT_DIRENT_START 19     /* 目录项初始扇区号 */
 #define FAT_DIRENT_SIZE 14      /* 目录项占用扇区数 */
 #define FAT_DATA_START 33       /* 数据区起始扇区数 */
-#define FAT_SIZE 2017      /* 数据区总簇数 */
+#define FAT_SIZE 2017           /* 数据区总簇数 */
 
 
 /* fat表内数值 */
@@ -68,6 +68,10 @@ int FatFree(int item);
 void FatClean();
 void FatInit();
 int FatFindSpace();
+void FatStatus();
+
+/* 获得下n个fat表项的值 */
+int nextNCluster(int first, int n);
 
 /* 目录项 */
 int DirentWrite(int cluster, int item, PDIRENT dir);
@@ -84,5 +88,20 @@ void DirentSet(PDIRENT dir, char *n, unsigned char a,
 FAT_TIME FatGetCurTime();
 FAT_DATE FatGetCurDate();
 
+/* 判断 */
+int isDir(PDIRENT dir);
+int isEmptyFile(PDIRENT dir);
+int isOutOfSector(int size);
+
+/* 簇链位置相关 */
+int inClusterPos(int pos);
+int inClusterIndex(int pos);
+
+/* 清除这个簇的内容 */
+int ClusterClean(int cluster);
+
+/* 文件的读写 */
+int FileWriteLine(int cluster, int pos, char *line, int size);
+int FileReadCluster(int cluster, char *line);
 
 #endif  /* _FAT16_H */
