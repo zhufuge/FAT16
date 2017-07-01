@@ -143,17 +143,6 @@ int DirentRead(int cluster, int item, PDIRENT dir)
     IOReadSector(sector, DirentInPos(item),
                  dir, sizeof(struct _DIRENT), 1);
 
-    /* IOReadSector(sector, DirentInPos(item), */
-    /*              dir->Name, sizeof(char), 8); */
-
-    /* IOReadSector(sector, DirentInPos(item), */
-    /*              dir->Extend, sizeof(char), 3); */
-
-    /* IOReadSector(sector, DirentInPos(item), */
-    /*              dir->Attributes, sizeof(char), 1); */
-
-
-
     /* 目录项不为空，则返回 0，否则返回 1。 */
     if(strcmp(dir->Name, "") == 0) {
         return 1;

@@ -26,7 +26,7 @@ struct _FAT_DATE {
 struct _DIRENT {
     char Name[8];                /* 文件名 */
     char Extend[3];              /* 扩展名 */
-    unsigned char Attributes[1];             /* 文件属性 */
+    unsigned char Attributes[1]; /* 文件属性 */
     unsigned char Reserved[10];  /* 保留未用 */
     FAT_TIME LastWriteTime;      /* 最后修改时间 */
     FAT_DATE LastWriteDate;      /* 最后修改日期 */
